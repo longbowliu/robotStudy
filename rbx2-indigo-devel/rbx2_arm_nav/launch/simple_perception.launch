@@ -9,7 +9,7 @@
     <param name="gripper/gripper_tolerance" value="0.05" />
     
     <!-- Remap the point cloud topic for Pi Robot -->
-    <remap from="/head_camera/depth_registered/points" to="/camera/depth_registered/points" />
+    <remap from="/camera/depth_registered/points" to="/head_camera/depth_registered/points" />
 
   </node>
 

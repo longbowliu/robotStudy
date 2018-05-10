@@ -78,7 +78,7 @@ from grasping_msgs.msg import *
 
 from rbx2_dynamixels.dynamixel_utils import arbotix_relax_all_servos
 
-GROUP_NAME_ARM = 'right_arm'
+GROUP_NAME_ARM = 'arm'
 GROUP_NAME_GRIPPER = 'right_gripper'
 
 GRIPPER_FRAME = 'right_gripper_link'
@@ -91,7 +91,7 @@ GRIPPER_JOINT_NAMES = ['right_gripper_finger_joint']
 
 GRIPPER_EFFORT = [1.0]
 
-REFERENCE_FRAME = 'base_footprint'
+REFERENCE_FRAME = 'base_link'
 
 class MoveItDemo:
     def __init__(self):
@@ -114,9 +114,10 @@ class MoveItDemo:
                         
         # Initialize the move group for the right arm
         right_arm = MoveGroupCommander(GROUP_NAME_ARM)
+        rospy.loginfo("ttt.....");
         
         # Initialize the move group for the right gripper
-        right_gripper = MoveGroupCommander(GROUP_NAME_GRIPPER)
+#         right_gripper = MoveGroupCommander(GROUP_NAME_GRIPPER)
         
         # Get the name of the end-effector link
         end_effector_link = right_arm.get_end_effector_link()
@@ -150,17 +151,17 @@ class MoveItDemo:
         rospy.loginfo("...connected")
         
         # Give the scene a chance to catch up    
-        rospy.sleep(1)
+#         rospy.sleep(1)
         
         # Start the arm in the "resting" pose stored in the SRDF file
         #right_arm.set_named_target('resting')
         #right_arm.go()
         
         # Open the gripper to the neutral position
-        right_gripper.set_joint_value_target(GRIPPER_NEUTRAL)
-        right_gripper.go()
+#         right_gripper.set_joint_value_target(GRIPPER_NEUTRAL)
+#         right_gripper.go()
        
-        rospy.sleep(1)
+#         rospy.sleep(1)
         
         # Begin the main perception and pick-and-place loop
         while not rospy.is_shutdown():
@@ -233,14 +234,17 @@ class MoveItDemo:
                 if the_object != None:
                     target_id = "object%d"%the_object
                     
+            
             # Insert the support surface into the planning scene
             for obj in find_result.support_surfaces:
                 # Extend surface to floor
                 height = obj.primitive_poses[0].position.z
                 obj.primitives[0].dimensions = [obj.primitives[0].dimensions[0],
-                                                2.0, # make table wider
-                                                obj.primitives[0].dimensions[2] + height]
-                obj.primitive_poses[0].position.z += -height/2.0
+#                                                 2.0, # make table wider
+                                                obj.primitives[0].dimensions[1], 
+#                                                 obj.primitives[0].dimensions[2] + height]
+                                                0.01]
+#                 obj.primitive_poses[0].position.z += height/2.0
     
                 # Add to scene
                 scene.addSolidPrimitive(obj.name,
@@ -251,9 +255,16 @@ class MoveItDemo:
                 # Get the table dimensions
                 table_size = obj.primitives[0].dimensions
                 
+#             rospy.sleep(10.0) 
+            
+            if len(find_result.objects) > 0:
+                rospy.sleep(10.0)
+            else :
+                rospy.sleep(0.1)
             # If no objects detected, try again
             if the_object == None or target_size is None:
                 rospy.logerr("Nothing to grasp! try again...")
+#                 rospy.sleep(10)
                 continue
     
             # Wait for the scene to sync
@@ -261,7 +272,7 @@ class MoveItDemo:
     
             # Set colors of the table and the object we are grabbing
             scene.setColor(target_id, 223.0/256.0, 90.0/256.0, 12.0/256.0)  # orange
-            scene.setColor(find_result.objects[the_object].object.support_surface, 0.3, 0.3, 0.3, 0.7)  # grey
+#             scene.setColor(find_result.objects[the_object].object.support_surface, 0.3, 0.3, 0.3, 0.7)  # grey
             scene.sendColors()
     
             # Skip pick-and-place if we are just detecting objects
@@ -308,7 +319,7 @@ class MoveItDemo:
             # Track success/failure and number of attempts for pick operation
             result = None
             n_attempts = 0
-            
+           
             # Set the start state to the current state
             right_arm.set_start_state_to_current_state()
              

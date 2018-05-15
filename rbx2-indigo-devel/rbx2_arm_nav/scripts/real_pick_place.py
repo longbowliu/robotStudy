@@ -79,15 +79,22 @@ from grasping_msgs.msg import *
 from rbx2_dynamixels.dynamixel_utils import arbotix_relax_all_servos
 
 GROUP_NAME_ARM = 'arm'
-GROUP_NAME_GRIPPER = 'right_gripper'
+GROUP_NAME_GRIPPER = 'graper'
 
-GRIPPER_FRAME = 'right_gripper_link'
+GRIPPER_FRAME = 'gripper_virtual'
 
-GRIPPER_OPEN = [0.08]
-GRIPPER_CLOSED = [-0.01]
-GRIPPER_NEUTRAL = [0.01]
+GRIPPER_OPEN = [-0.45]
+GRIPPER_CLOSED = [0.5]
+GRIPPER_NEUTRAL = [0.18]
+'''
+GRIPPER_OPEN_5 = [-0.45]
+GRIPPER_4 = [-0.05]
+GRIPPER_3 = [0.18]
+GRIPPER_2 = [0.35]
+GRIPPER_CLOSE_1 = [0.5]
+'''
 
-GRIPPER_JOINT_NAMES = ['right_gripper_finger_joint']
+GRIPPER_JOINT_NAMES = ['hand_to_finger2']
 
 GRIPPER_EFFORT = [1.0]
 
@@ -117,7 +124,7 @@ class MoveItDemo:
         rospy.loginfo("ttt.....");
         
         # Initialize the move group for the right gripper
-#         right_gripper = MoveGroupCommander(GROUP_NAME_GRIPPER)
+        right_gripper = MoveGroupCommander(GROUP_NAME_GRIPPER)
         
         # Get the name of the end-effector link
         end_effector_link = right_arm.get_end_effector_link()
@@ -160,9 +167,9 @@ class MoveItDemo:
         # Open the gripper to the neutral position
 #         right_gripper.set_joint_value_target(GRIPPER_NEUTRAL)
 #         right_gripper.go()
-       
-#         rospy.sleep(1)
         
+#         rospy.sleep(1)
+         
         # Begin the main perception and pick-and-place loop
         while not rospy.is_shutdown():
             # Initialize the grasping goal
@@ -176,7 +183,7 @@ class MoveItDemo:
             find_objects.send_goal(goal)
             
             # Wait for a result
-            find_objects.wait_for_result(rospy.Duration(5.0))
+            find_objects.wait_for_result(rospy.Duration(1.0))
             
             # The result will contain support surface(s) and objects(s) if any are detected
             find_result = find_objects.get_result()
@@ -257,10 +264,10 @@ class MoveItDemo:
                 
 #             rospy.sleep(10.0) 
             
-            if len(find_result.objects) > 0:
-                rospy.sleep(10.0)
-            else :
-                rospy.sleep(0.1)
+#             if len(find_result.objects) > 0:
+#                 rospy.sleep(1.0)
+#             else :
+#                 rospy.sleep(0.1)
             # If no objects detected, try again
             if the_object == None or target_size is None:
                 rospy.logerr("Nothing to grasp! try again...")
@@ -289,13 +296,14 @@ class MoveItDemo:
             right_arm.set_support_surface_name(support_surface)
             
             # Specify a pose to place the target after being picked up
-            place_pose = PoseStamped()
-            place_pose.header.frame_id = REFERENCE_FRAME
-            place_pose.pose.position.x = target_pose.pose.position.x
-            place_pose.pose.position.y = 0.03
-            place_pose.pose.position.z = table_size[2] + target_size[2] / 2.0 + 0.015
-            place_pose.pose.orientation.w = 1.0
-                            
+#             place_pose = PoseStamped()
+#             place_pose.header.frame_id = REFERENCE_FRAME
+#             place_pose.pose.position.x = target_pose.pose.position.x
+#             place_pose.pose.position.y = 0.03
+#             place_pose.pose.position.z = table_size[2] + target_size[2] / 2.0 + 0.02
+#             place_pose.pose.orientation.w = 1.0
+            right_gripper.set_joint_value_target(GRIPPER_OPEN)
+            right_gripper.go()          
             # Initialize the grasp pose to the target pose
             grasp_pose = target_pose
              
@@ -303,7 +311,7 @@ class MoveItDemo:
             try:
                 grasp_pose.pose.position.x += target_size[0] / 2.0
                 grasp_pose.pose.position.y -= 0.01
-                grasp_pose.pose.position.z += target_size[2] / 2.0
+                grasp_pose.pose.position.z += (target_size[2] / 2.0+0.06)
             except:
                 rospy.loginfo("Invalid object size so skipping")
                 continue
@@ -330,7 +338,8 @@ class MoveItDemo:
                 rospy.loginfo("Pick attempt: " +  str(n_attempts))
                 rospy.sleep(1.0)
              
-            # If the pick was successful, attempt the place operation   
+            # If the pick was successful, attempt the place operation 
+            '''  
             if result == MoveItErrorCodes.SUCCESS:
                 result = None
                 n_attempts = 0
@@ -357,23 +366,43 @@ class MoveItDemo:
                 rospy.loginfo("Pick operation failed after " + str(n_attempts) + " attempts.")
 
             rospy.sleep(2)
-            
+            '''
             # Open the gripper to the neutral position
             right_gripper.set_joint_value_target(GRIPPER_NEUTRAL)
             right_gripper.go()
             
-            rospy.sleep(2)
+            rospy.sleep(1)
             
             # Return the arm to the "resting" pose stored in the SRDF file
-            right_arm.set_named_target('resting')
-            right_arm.go()
-             
-            rospy.sleep(2)
+            
+            
+#             saved_target_pose = right_arm.get_current_pose(end_effector_link) 
+            
+    #         target_pose = PoseStamped()
+    #         target_pose.header.frame_id = REFERENCE_FRAME
+#             target_pose.header.stamp = rospy.Time.now() 
+    #       (0.20 , -0.15, 0.25) (0.20, 0.05, 0.17) 
+#             target_pose.pose.position.x = 0.03
+#             target_pose.pose.position.y = 0.36
+#             target_pose.pose.position.z = 0.29
+#             target_pose.pose.orientation.w = 1.0
+            
+    #         test 2
+    #         orient= Quaternion(*tf.transformations.quaternion_from_euler(0.014649487814654276, 0.10206936876038807, -0.08378227897330348))
+    #         target_pose.pose.orientation=orient
+    
+#             right_arm.set_pose_target("defualt", end_effector_link)
+#             traj1 = right_arm.plan()
+#             right_arm.execute(traj1)
+            
+#             right_arm.set_named_target('default')
+#             right_arm.go()
+            
             
             # Give the servos a rest
-            arbotix_relax_all_servos()
+#             arbotix_relax_all_servos()
             
-            rospy.sleep(2)
+#             rospy.sleep(2)
         
             if args.once:
                 # Shut down MoveIt cleanly
